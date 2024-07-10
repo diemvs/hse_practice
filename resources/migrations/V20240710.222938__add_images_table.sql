@@ -2,7 +2,7 @@ CREATE TABLE files (
     id           bigserial not null
         constraint files_pkey primary key,
 
-    name         varchar(60)
+    name         varchar(255)
 );
 
 CREATE TABLE users_images (
@@ -16,5 +16,5 @@ CREATE TABLE users_images (
         CONSTRAINT users_images_user_id_fk
             REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
 
-    embedding   NUMERIC(9,2)[]  NOT NULL
+    embedding   NUMERIC(9,2)[]
 );

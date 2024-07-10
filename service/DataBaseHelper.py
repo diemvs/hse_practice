@@ -1,10 +1,14 @@
 import psycopg
 import os
-from dotenv import load_dotenv 
+from dotenv import load_dotenv
+
+from service.FaceRecognitionHelper import FaceRecognitionHelper
 
 class DataBaseHelper:
     def __init__(self):
         load_dotenv()
+        
+        self.face_recon_helper = FaceRecognitionHelper()
         
         conninfo = " ".join([
             f'dbname={os.getenv("DATABASE_NAME")}',
@@ -45,8 +49,8 @@ class DataBaseHelper:
             
             file_id = cur.fetchone()[0]
             
-            # TODO: face_recognition
-            embedding = [0.0 for i in range(1, 128)]
+            embeddings = self.face_recon_helper.get_image_embeddings(path)
+            embedding = embeddings[0].tolist() if len(embeddings) > 0 else None
             
             cur.execute("""
                 INSERT INTO users_images (file_id, user_id, embedding) 

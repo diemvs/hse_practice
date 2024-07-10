@@ -1,9 +1,11 @@
 from service.DataBaseHelper import DataBaseHelper
+
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 
 import uvicorn
 
 db_helper = DataBaseHelper()
+
 
 app = FastAPI()
 
