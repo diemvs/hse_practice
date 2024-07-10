@@ -17,13 +17,43 @@ class DataBaseHelper:
         
         self.conn = psycopg.connect(conninfo=conninfo)
             
+    def add_user(self, surname: str, name: str, patronymic: str):
         with self.conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO users (name, surname, patronymic) 
-                VALUES ('Test', 'Testov', 'Testovich');
-            """)
+                INSERT INTO users (surname, name, patronymic) 
+                VALUES ('{}', '{}', '{}') RETURNING id;
+            """.format(surname, name, patronymic))
+            
+            res = cur.fetchone()
             
             self.conn.commit()
             
-            self.conn.close()
+            return res[0]
+        
+    def add_user_image(self, user_id: int, file: bytes, filename: str):
+        path = f'resources/images/{filename}'
+        
+        with open(path, "wb+") as file_object:
+            file_object.write(file)
+        
+        with self.conn.cursor() as cur:
+            
+            cur.execute("""
+                INSERT INTO files (name) 
+                VALUES ('{}') RETURNING id;
+            """.format(path))
+            
+            file_id = cur.fetchone()[0]
+            
+            # TODO: face_recognition
+            embedding = [0.0 for i in range(1, 128)]
+            
+            cur.execute("""
+                INSERT INTO users_images (file_id, user_id, embedding) 
+                VALUES (%s, %s, %s) RETURNING id;
+            """, (file_id, user_id, embedding))
+            
+            self.conn.commit()
+            
+            return file_id
         
