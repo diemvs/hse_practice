@@ -1,6 +1,7 @@
 import psycopg
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 
 from service.FaceRecognitionHelper import FaceRecognitionHelper
@@ -82,4 +83,41 @@ class DataBaseHelper:
                 
             return dict
             
-            
+    def add_inventory_change_events(self, user_id, events_dict):
+        tools_dict = self.get_tools_dictionary()
+        with self.conn.cursor() as cur:
+            for tool, count in events_dict['brought'].items():
+                if tool in tools_dict:
+                    for _ in range(count):
+                        cur.execute("""
+                                    INSERT INTO tools_journal (datetime, tool_id, user_id, status) 
+                                    VALUES (%s, %s, %s, %s) RETURNING id;
+                            """, (datetime.now().isoformat(), tools_dict[tool], user_id, 'взял'))
+
+            for tool, count in events_dict['took_away'].items():
+                if tool in tools_dict:
+                    for _ in range(count):
+                        cur.execute("""
+                                    INSERT INTO tools_journal (datetime, tool_id, user_id, status) 
+                                    VALUES (%s, %s, %s, %s) RETURNING id;
+                            """, (datetime.now().isoformat(), tools_dict[tool], user_id, 'вернул'))
+
+        self.conn.commit()
+
+    def find_user_id_by_embedding(self, embedding):
+        with self.conn.cursor() as cur:
+            embedding_str = ','.join(map(str, embedding[0]))
+            embedding_array = "{" + embedding_str + "}"
+            cur.execute("""
+                            SELECT 
+                                user_id,
+                                embedding,
+                                euclidean_distance(embedding, %s ::numeric[]) AS distance
+                            FROM 
+                                users_images
+                            ORDER BY 
+                                distance
+                            LIMIT 1
+                        """, (embedding_array,))
+
+            return cur.fetchone()[0]

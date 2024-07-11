@@ -1,5 +1,6 @@
 from service.DataBaseHelper import DataBaseHelper
 from service.utils import save_file
+from service.FaceRecognitionHelper import FaceRecognitionHelper
 
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 
@@ -14,6 +15,8 @@ app = FastAPI()
 
 model = YOLO('./best.pt').to('cpu')
 initial_state = None
+
+face_recognition = FaceRecognitionHelper() # for test
 
 def tools_after_visit(before, after):
     before_counter = Counter(before)
@@ -63,7 +66,17 @@ async def detection(tools_image: UploadFile = File(...), face_image: UploadFile 
         initial_state = actual_state
     else:
         state_change = tools_after_visit(initial_state, actual_state)
+        # тут должно быть вычисление пользователя по эмбеддингу
         print(state_change)
-    
+        db_helper.add_inventory_change_events(1, state_change)
+
+@app.post('/get_user_id_by_photo')
+async def get_user_id(face_image: UploadFile = File(...)):
+    face_image_path = await save_file(face_image)
+    emb = face_recognition.get_image_embeddings(face_image_path)
+    return db_helper.find_user_id_by_embedding(emb)
+
+
+
 if __name__ == '__main__':
     uvicorn.run(app, port=3000)
