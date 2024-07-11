@@ -1,6 +1,7 @@
 import psycopg
 import os
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
 
 from service.FaceRecognitionHelper import FaceRecognitionHelper
 
@@ -50,7 +51,11 @@ class DataBaseHelper:
             file_id = cur.fetchone()[0]
             
             embeddings = self.face_recon_helper.get_image_embeddings(path)
-            embedding = embeddings[0].tolist() if len(embeddings) > 0 else None
+
+            if len(embeddings) == 0:
+                raise HTTPException(status_code=400, detail='embedding is empty')
+            
+            embedding = embeddings[0].tolist()
             
             cur.execute("""
                 INSERT INTO users_images (file_id, user_id, embedding) 
@@ -61,3 +66,17 @@ class DataBaseHelper:
             
             return file_id
         
+    def get_tools_dictionary(self): 
+        with self.conn.cursor() as cur:
+            
+            cur.execute("SELECT * FROM tools")
+            
+            dict = {}
+            
+            for row in cur:
+                id, name = row
+                dict[name] = id
+                
+            return dict
+            
+            
