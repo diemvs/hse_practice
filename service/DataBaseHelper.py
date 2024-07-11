@@ -9,6 +9,9 @@ class DataBaseHelper:
     def __init__(self):
         load_dotenv()
         
+        if not  os.path.isdir('resources/images'):
+            os.makedirs('resources/images')
+        
         self.face_recon_helper = FaceRecognitionHelper()
         
         conninfo = " ".join([
