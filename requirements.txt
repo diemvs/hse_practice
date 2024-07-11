@@ -1,1 +1,5 @@
 pyway==0.3.27
+face-recognition-models==0.3.0
+dlib==19.24.2
+fastapi==0.111.0
+uvicorn==0.30.1
