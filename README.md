@@ -3,7 +3,7 @@
 ## Установка библиотек
 
 ```sh
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 Создание конфигурационного файла (pyway.conf) для pyway.
