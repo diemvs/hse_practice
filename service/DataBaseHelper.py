@@ -119,5 +119,37 @@ class DataBaseHelper:
                                 distance
                             LIMIT 1
                         """, (embedding_array,))
+            user_id, _, dist = cur.fetchone()
 
-            return cur.fetchone()[0]
+            return user_id if dist < 0.6 else 1 # if dist less than 0.6 than user_id else id = 1 (unknown)
+
+    def get_users_dict(self):
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT * FROM users")
+
+            dict = {}
+
+            for row in cur:
+                id, name, surname, patronymic = row
+                dict[id] = f'{name} {surname} {patronymic}'
+
+            return dict
+
+    def get_journal(self):
+        result = []
+        users_dict = self.get_users_dict()
+        tools_dict = self.get_tools_dictionary()
+        tools_dict = {id: tool for tool, id in tools_dict.items()}
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT * FROM tools_journal")
+
+            for row in cur:
+                dict = {}
+                _, date_time, tool_id, user_id, status = row
+                dict['datetime'] = date_time
+                dict['tool'] = tools_dict[tool_id]
+                dict['user'] = users_dict[user_id]
+                dict['status'] = status
+                result.append(dict)
+
+            return result

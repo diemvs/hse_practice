@@ -16,7 +16,7 @@ app = FastAPI()
 model = YOLO('./best.pt').to('cpu')
 initial_state = None
 
-face_recognition = FaceRecognitionHelper() # for test
+face_recognition = FaceRecognitionHelper()
 
 def tools_after_visit(before, after):
     before_counter = Counter(before)
@@ -54,7 +54,7 @@ async def get_tools_dict():
     return db_helper.get_tools_dictionary()
 
 @app.post("/detection")
-async def detection(tools_image: UploadFile = File(...), face_image: UploadFile = File(...)):
+async def detection(tools_image: UploadFile = File(...), face_image: UploadFile = File(...), status_code=200):
     tools_image_path = await save_file(tools_image)
     face_image_path = await save_file(face_image)
 
@@ -66,17 +66,14 @@ async def detection(tools_image: UploadFile = File(...), face_image: UploadFile 
         initial_state = actual_state
     else:
         state_change = tools_after_visit(initial_state, actual_state)
-        # тут должно быть вычисление пользователя по эмбеддингу
-        print(state_change)
-        db_helper.add_inventory_change_events(1, state_change)
+        emb = face_recognition.get_image_embeddings(face_image_path)
+        user_id = db_helper.find_user_id_by_embedding(emb)
+        db_helper.add_inventory_change_events(user_id, state_change)
+        initial_state = actual_state
 
-@app.post('/get_user_id_by_photo')
-async def get_user_id(face_image: UploadFile = File(...)):
-    face_image_path = await save_file(face_image)
-    emb = face_recognition.get_image_embeddings(face_image_path)
-    return db_helper.find_user_id_by_embedding(emb)
-
-
+@app.post("/journal")
+def post_journal():
+    return db_helper.get_journal()
 
 if __name__ == '__main__':
     uvicorn.run(app, port=3000)
